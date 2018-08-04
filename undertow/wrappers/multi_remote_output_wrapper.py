@@ -34,7 +34,7 @@ class MultiRemoteOutputWrapper(object):
 
     def __getitem__(self, item):
         if isinstance(item, int):
-            if item >=len(self.service_results):
+            if item >= len(self.service_results):
                 raise ValueError("MultiremoteResults got out of bound index: %d" % item)
             return self.values[item]
 

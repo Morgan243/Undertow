@@ -29,5 +29,5 @@ class ScratchPad(object):
 if __name__ == "__main__":
     from undertow.service import ServiceModule
     rs_kv = ServiceModule.discover(ScratchPad)
-    rs_kv.exec("print(\'hello world\');")
+    rs_kv.u_exec("print(\'hello world\');")
 

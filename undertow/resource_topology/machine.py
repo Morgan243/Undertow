@@ -31,7 +31,7 @@ class MachineInstance(object):
         self.exec_thread.join()
         self.is_stopped = True
 
-    def exec(self):
+    def u_exec(self):
         try:
             io = self.ssh_client.exec_command(self.cmd_str,
                                               get_pty=True)
@@ -40,7 +40,7 @@ class MachineInstance(object):
             pass
 
     def start(self):
-        self.exec_thread = thread(target=self.exec)
+        self.exec_thread = thread(target=self.u_exec)
         return self
 
     def read_stdout(self):

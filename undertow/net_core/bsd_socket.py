@@ -5,7 +5,10 @@ import time
 import socket
 import pickle
 import sys
-from queue import Queue
+try:
+    from queue import Queue
+except ImportError as e:
+    from Queue import Queue
 
 import undertow.utils as utils
 from undertow import configuration as conf

@@ -262,7 +262,8 @@ class ServiceModule(object):
     def launch(obj, host=None, port=None, net_connection=None,
                name=None, reg=None,
                as_process=False,
-               bcast_response=True):
+               bcast_response=True,
+               blocking=False):
 
         cb_container, workers = ServiceModule.get_undertow_maps_of_instance(obj)
 
@@ -294,6 +295,9 @@ class ServiceModule(object):
 
         if reg is not None:
             ls.register(reg)
+
+        if blocking:
+            ls.wait_on()
 
         return ls
 
@@ -356,38 +360,40 @@ class ServiceModule(object):
 
 
     @staticmethod
-    def launch_from_module_file(module_path, num_instances,
+    def launch_from_module_file(module_path, class_name=None,
                                 registry_server=None,
                                 append_path=True):
+        """
+
+        :param module_path:
+        :param num_instances:
+        :param registry_server:
+        :param append_path: Add modules directory to python path
+        :return: a launched service instance
+        """
         launched_service = list()
 
-        print(os.getcwd())
         if append_path:
             base_path = os.path.join(*os.path.split(module_path)[:-1])
-            #sys.path.append(os.path.join(*base_path))
             sys.path.insert(0, base_path)
-            print(sys.path)
             module_name = os.path.split(module_path)[-1]
             imp_mod = importlib.import_module(module_name.split('.')[0])
         else:
             imp_mod = importlib.import_module(module_path)
 
-        # TODO: this be broke - not importing from file, just programttic import?
         for attr in dir(imp_mod):
             m_attr = getattr(imp_mod, attr)
             ut_id = ServiceModule.get_undertow_id(m_attr)
             if inspect.isclass(m_attr) and ut_id is not None:
-                if num_instances > 1:
-                    for n_id in range(0, num_instances):
-                        ls = ServiceModule.launch(m_attr(), reg=registry_server,
-                                                  as_process=True)
-                        logger.info("Launched %s-%d" % (str(m_attr), n_id))
-                        launched_service.append(ls)
-                        time.sleep(3)
-                else:
-                    ls = ServiceModule.launch(m_attr(), reg=registry_server)
-                    logger.info("Launched %s" % str(m_attr))
-                    launched_service.append(ls)
+                alias = ServiceModule.get_undertow_alias(m_attr)
+
+                # If we are only starting a specific class in the module
+                if class_name is not None and class_name == alias:
+                    continue
+                ls = ServiceModule.launch(m_attr(), reg=registry_server)
+
+                logger.info("Launched %s (%s)" % (alias, str(m_attr)))
+                launched_service.append(ls)
         return launched_service
 
     @staticmethod
@@ -461,9 +467,16 @@ if __name__ == "__main__":
         mp_pool = None
         for m in modules:
             logger.info("Loading %s" % m)
-            launched_service = ServiceModule.launch_from_module_file(module_path=m,
-                                                                     registry_server=reg_srv,
-                                                                     num_instances=args.num_instances)
+            if args.num_instances == 1:
+                launched_service = ServiceModule.launch_from_module_file(module_path=m,
+                                                                         registry_server=reg_srv)
+            elif args.num_instances > 1:
+                logger.info("Launching proxy for %s instances" % str(m))
+                #from undertow.proxy import Proxy
+                #prox = ServiceModule.launch(Proxy, reg=reg_srv)
+                #prox.launch_local_service(module_path=m, )
+
+
 
         for ls in launched_service:
             ls.wait_on()

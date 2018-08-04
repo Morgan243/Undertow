@@ -36,7 +36,7 @@ class RemoteServiceWrapper(object):
         #                                                       max_to_return=1 if return_first else 100)
 
     # TODO: Handle connection sharing here?
-    def exec_remote_callback(self, *args, #host=None, port=None,
+    def exec_remote_callback(self, #*args,
                              cb_func=None, cb_args=None, cb_kwargs=None,
                              meta_data=None, **kwargs):
         if cb_args is None:
@@ -48,7 +48,7 @@ class RemoteServiceWrapper(object):
         if meta_data is None:
             meta_data = dict()
 
-        cb_args += args
+        #cb_args += args
         cb_kwargs.update(kwargs)
 
         cbr = CallbackWrapper.build_callback_request(cb_func, args=cb_args, kwargs=cb_kwargs,
@@ -81,7 +81,16 @@ class RemoteServiceWrapper(object):
         self.callback_map = resp
         return self
 
-    def run(self, *args, cb_name='none', return_value_only=True, **kwargs):
+    #def run(self, *args, cb_name='none', return_value_only=True, **kwargs):
+    def run(self, *args,  **kwargs):
+        if kwargs is None:
+            kwargs = dict()
+        cb_name = kwargs.get('cb_name', 'none')
+        return_value_only = kwargs.get('return_value_only', True)
+        del kwargs['cb_name']
+        del kwargs['return_value_only']
+
+        #cb_name='none', return_value_only=True,
 
         #resp = self.net_connection.send_then_receive('callbacks')
 
@@ -123,6 +132,7 @@ class RemoteServiceWrapper(object):
             callbacks = rs.fetch_callbacks().callback_map
 
         for f_name in callbacks:
+
             f = functools.partial(rs.run, cb_name=f_name,
                                   return_value_only=True)
             setattr(rs, f_name, f)

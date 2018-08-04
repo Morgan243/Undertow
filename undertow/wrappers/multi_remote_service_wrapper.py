@@ -1,6 +1,12 @@
 import attr
 import uuid
-import queue
+try:
+    from queue import Queue
+    from queue import Empty
+except ImportError as e:
+    from Queue import Queue
+    from Queue import Empty
+
 import time
 from undertow.net_core.bsd_socket import NetCore
 from undertow import utils
@@ -15,10 +21,10 @@ class MultiRemoteServiceWrapper(object):
     remote_services = attr.attr(default=None)
     serial = attr.attr(default=attr.make_class('MultiMethod', dict()), init=False)
     parallel = attr.attr(default=attr.make_class('ParallelMultiMethod', dict()), init=False)
-    results = attr.attr(default=attr.Factory(queue.Queue))
+    results = attr.attr(default=attr.Factory(Queue))
     delay_between_work = attr.attr(default=None)
 
-    call_queue = attr.attr(default=attr.Factory(queue.Queue))
+    call_queue = attr.attr(default=attr.Factory(Queue))
 
     @staticmethod
     def check_for_matching_services(remote_s):
@@ -77,7 +83,7 @@ class MultiRemoteServiceWrapper(object):
                 #if self.delay_between_work is not None:
                 #    time.sleep(self.delay_between_work)
 
-            except queue.Empty as e:
+            except Empty as e:
                 print("No more work")
                 break
         print("work on call queue ending")
@@ -99,7 +105,7 @@ class MultiRemoteServiceWrapper(object):
 
                 self.results.put((idx, service, seq_res))
 
-            except queue.Empty as e:
+            except Empty as e:
                 print("No more work")
                 break
         print("work on call queue ending")
@@ -159,10 +165,22 @@ class MultiRemoteServiceWrapper(object):
         return MultiRemoteOutputWrapper().multi_remote_outputs(res, as_sequence=True)
 
 
-    def map(self, f, *args, iterable_args=None, iterable_kwargs=None, **kwargs):
+    def map(self, f, *args,
+            **kwargs):
         """"
         Iterable *args/**kwargs are for distinct kwargs
         """
+        iterable_args = None
+        iterable_kwargs = None
+
+        if 'iterable_args' in kwargs:
+            iterable_args = kwargs.get('iterable_args')
+            del kwargs['iterable_args']
+
+        if 'iterable_kwargs' in kwargs:
+            iterable_kwargs = kwargs.get('iterable_kwargs')
+            del kwargs['iterable_kwargs']
+
         if iterable_args is None and iterable_kwargs is None:
             raise ValueError("Need at least one of iterable args or iterable kwargs")
 

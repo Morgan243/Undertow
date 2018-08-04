@@ -67,6 +67,8 @@ def module_name_from_file_name(filename):
         return [module_name_from_file_name(n) for n in filename]
     return filename[:-3] if '.py' == filename[-3:] else filename
 
+
+
 def host_port_from_str(hp_str):
     if ':' not in hp_str:
         raise ValueError("Don't understand host+port str: %s" % hp_str)

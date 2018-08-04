@@ -37,10 +37,9 @@ class Proxy(object):
     #    utils.thread(target=)
 
     @Expose()
-    def launch_local_service(self, module_path,
-                             num_instances=1):
-        s = sm.launch_from_module_file(module_path=module_path,
-                                       num_instances=num_instances)
+    def launch_local_service(self, module_path):
+        s = sm.launch_from_module_file(module_path=module_path)
+
         sid = uuid.uuid4()
         self.service_map[sid] = s
         return sid

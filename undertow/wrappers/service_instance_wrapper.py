@@ -2,7 +2,11 @@ import time
 import socket
 import attr
 import uuid
-import queue
+try:
+    from queue import Queue
+except ImportError as e:
+    from Queue import Queue
+
 from threading import Lock, Event
 from undertow.net_core.bsd_socket import NetCore, BroadcastCore
 from undertow.net_core.net_connection import NetBroadcast
@@ -23,8 +27,8 @@ class ServiceInstanceWrapper(object):
     net_broadcast = attr.attr(default=None, init=False)
 
     callback_worker_thread = attr.attr(default=None, init=False)
-    callback_request_q = attr.attr(default=attr.Factory(queue.Queue), init=False)
-    outgoing_q = attr.attr(default=attr.Factory(queue.Queue), init=False)
+    callback_request_q = attr.attr(default=attr.Factory(Queue), init=False)
+    outgoing_q = attr.attr(default=attr.Factory(Queue), init=False)
 
     client_conn_lock = attr.attr(default=attr.Factory(Lock), init=False)
     client_connections = attr.attr(default=attr.Factory(dict), init=False)
@@ -210,22 +214,7 @@ class ServiceInstanceWrapper(object):
             except:
                 raise
 
-
-    def make_available(self, as_process=False):
-        if self.is_running():
-            raise ValueError("Cant call make_available when already available")
-
-        if as_process:
-            # Process won't share stack with current process, will cause
-            # problems if some things become state-dependent....
-            logger.debug("Making available as process")
-            self.listen_process = Process(target=self.make_available,
-                                          kwargs=dict(as_process=False))
-            self.listen_process.start()
-            return self
-
-        #if socket is not None:
-        #    self.set_socket(socket=socket)
+    def __start(self):
         if self.net_connection is None:
             raise ValueError("No net connection for service instance")
         self.net_connection.listen()
@@ -237,12 +226,32 @@ class ServiceInstanceWrapper(object):
 
         self.is_available = True
         logger.debug("%s has been made available" % str(self.name))
-
-        #if self.uid in available_callbacks:
-        #    raise ValueError('Callback wrapper UID is in use by %s'
-        #                     % str(available_callbacks[self.uid]))
-        #available_callbacks[self.uid] = self
         return self
+
+    def __start_as_process(self):
+        raise NotImplementedError()
+
+
+    def make_available(self, as_process=False, blocking=False):
+        if self.is_running():
+            raise ValueError("Cant call make_available when already available")
+
+        if as_process:
+            raise NotImplementedError("Can't start process in another process automagically")
+            # Process won't share data with current process, will cause
+            # problems if some things become state-dependent....
+            logger.debug("Making available as process")
+            self.listen_process = Process(target=self.__start_as_process)
+            self.listen_process.start()
+        else:
+            self.__start()
+
+        if blocking:
+            self.wait_on()
+
+        return self
+
+
 
 
     def wait_on(self):

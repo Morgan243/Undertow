@@ -8,6 +8,11 @@ from undertow import utils
 #from undertow.utils import thread
 import threading
 
+try:
+    from queue import Queue
+except ImportError as e:
+    from Queue import Queue
+
 logger = utils.setup_logger(name='NetConnection')
 from undertow import configuration as conf
 
@@ -234,7 +239,6 @@ class NetConnection(object):
         return NetCore.send_then_receive_response(self.socket,
                                                   obj)
 
-import queue
 
 @attr.attributes
 class NetBroadcast(object):
@@ -251,7 +255,7 @@ class NetBroadcast(object):
 
 
     broadcast_socket = attr.attr(default=None)
-    received_data = attr.attr(default=attr.Factory(queue.Queue))
+    received_data = attr.attr(default=attr.Factory(Queue))
     uuid = attr.attr(default=attr.Factory(uuid.uuid4))
 
     finished = attr.attr(default=False)
